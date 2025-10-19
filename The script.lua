@@ -118,55 +118,28 @@ end
 R6TabBtn.MouseButton1Click:Connect(function() switchTab("R6") end)
 R15TabBtn.MouseButton1Click:Connect(function() switchTab("R15") end)
 OtherTabBtn.MouseButton1Click:Connect(function() switchTab("Other") end)
--- PART 2
+-- Part 1: UI Setup (Ensure this is already in place)
 
-local UIS = game:GetService("UserInputService")
+-- Part 2: Fixes and Enhancements
 local TweenService = game:GetService("TweenService")
-local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
+local UIS = game:GetService("UserInputService")
 local UI = script.Parent:WaitForChild("MainFrame")
-
--- Smooth rainbow outline
 local Outline = UI:WaitForChild("Outline")
-local Hue = 0
-game:GetService("RunService").RenderStepped:Connect(function(dt)
-    Hue = (Hue + dt*0.2) % 1
-    local color = Color3.fromHSV(Hue, 1, 1)
-    Outline.BackgroundColor3 = color
-end)
-
--- Drag functionality
-local dragging = false
-local dragInput, mousePos, framePos
-UI.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        mousePos = input.Position
-        framePos = UI.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-UI.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - mousePos
-        UI.Position = framePos + UDim2.new(0, delta.X, 0, delta.Y)
-    end
-end)
-
--- Minimize & Close
-local minimizeBtn = UI:WaitForChild("MinimizeBtn")
-local closeBtn = UI:WaitForChild("CloseBtn")
+local minimizeBtn = UI:WaitForChild("MinimizeButton")
+local closeBtn = UI:WaitForChild("CloseButton")
 local miniBar = script:WaitForChild("MiniBar")
 
+-- Smooth rainbow outline
+local function createRainbowTween()
+    local tweenInfo = TweenInfo.new(5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true)
+    local goal = {BackgroundColor3 = Color3.fromHSV(tick() % 1, 1, 1)}
+    local tween = TweenService:Create(Outline, tweenInfo, goal)
+    tween:Play()
+end
+
+createRainbowTween()
+
+-- Minimize and Close Button Functionality
 minimizeBtn.MouseButton1Click:Connect(function()
     UI.Visible = false
     miniBar.Visible = true
@@ -182,18 +155,10 @@ miniBar.OpenBtn.MouseButton1Click:Connect(function()
     miniBar.Visible = false
 end)
 
--- Q keybind notification
-UIS.InputBegan:Connect(function(input, gpe)
-    if not gpe and input.KeyCode == Enum.KeyCode.Q then
-        UI.Visible = true
-        miniBar.Visible = false
-        -- Notification
-        local notif = Instance.new("TextLabel")
-        notif.Size = UDim2.new(0,200,0,40)
-        notif.Position = UDim2.new(0.5,-100,0.1,0)
-        notif.BackgroundTransparency = 0.5
-        notif.Text = "UI Shown via Q"
-        notif.Parent = UI.Parent
-        game.Debris:AddItem(notif,2)
+-- Q Keybind to Toggle UI Visibility
+UIS.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.Q then
+        UI.Visible = not UI.Visible
+        miniBar.Visible = not miniBar.Visible
     end
 end)

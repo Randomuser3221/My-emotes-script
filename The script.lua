@@ -1,10 +1,5 @@
 -- My Emotes Script (Part 1: UI Setup & Tabs)
 
--- Destroy previous UI if exists
-if game.CoreGui:FindFirstChild("MyEmotesUI") then
-    game.CoreGui.MyEmotesUI:Destroy()
-end
-
 -- Services
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")

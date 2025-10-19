@@ -145,3 +145,105 @@ end
 generateEmoteButtons(R6Emotes)
 
 -- PART 1 SCRIPT END
+
+-- PART 2 SCRIPT START
+
+-- Hide/Show Frames for Tabs
+local R6Frame = Instance.new("Frame")
+R6Frame.Size = UDim2.new(1,0,1,-70)
+R6Frame.Position = UDim2.new(0,0,0,70)
+R6Frame.BackgroundTransparency = 1
+R6Frame.Parent = MainFrame
+
+local R15Frame = Instance.new("Frame")
+R15Frame.Size = UDim2.new(1,0,1,-70)
+R15Frame.Position = UDim2.new(0,0,0,70)
+R15Frame.BackgroundTransparency = 1
+R15Frame.Visible = false
+R15Frame.Parent = MainFrame
+
+local OtherFrame = Instance.new("Frame")
+OtherFrame.Size = UDim2.new(1,0,1,-70)
+OtherFrame.Position = UDim2.new(0,0,0,70)
+OtherFrame.BackgroundTransparency = 1
+OtherFrame.Visible = false
+OtherFrame.Parent = MainFrame
+
+R6TabBtn.MouseButton1Click:Connect(function()
+    R6Frame.Visible = true
+    R15Frame.Visible = false
+    OtherFrame.Visible = false
+end)
+
+R15TabBtn.MouseButton1Click:Connect(function()
+    R6Frame.Visible = false
+    R15Frame.Visible = true
+    OtherFrame.Visible = false
+end)
+
+OtherTabBtn.MouseButton1Click:Connect(function()
+    R6Frame.Visible = false
+    R15Frame.Visible = false
+    OtherFrame.Visible = true
+end)
+
+-- Minimize Button
+local Minimized = false
+MinButton.MouseButton1Click:Connect(function()
+    if not Minimized then
+        MainFrame.Size = UDim2.new(0,150,0,30)
+        EmoteFrame.Visible = false
+        R6Frame.Visible = false
+        R15Frame.Visible = false
+        OtherFrame.Visible = false
+        Minimized = true
+    else
+        MainFrame.Size = UDim2.new(0,600,0,400)
+        EmoteFrame.Visible = true
+        R6Frame.Visible = true
+        Minimized = false
+    end
+end)
+
+-- Close Button
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Function to play R6 Emotes correctly
+local function playEmote(animationId)
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+    if hum then
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://"..animationId
+        local track = hum:LoadAnimation(anim)
+        track:Play()
+    end
+end
+
+-- Generate Buttons for R6 Frame
+local function generateR6Buttons(emotes)
+    local yPos = 0
+    for _, emote in ipairs(emotes) do
+        local Btn = Instance.new("TextButton")
+        Btn.Text = emote.Name
+        Btn.Font = Enum.Font.FredokaOne
+        Btn.TextSize = 16
+        Btn.Size = UDim2.new(0,150,0,30)
+        Btn.Position = UDim2.new(0,10,0,yPos)
+        Btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+        Btn.TextColor3 = Color3.fromRGB(255,255,255)
+        Btn.Parent = R6Frame
+
+        Btn.MouseButton1Click:Connect(function()
+            pcall(function()
+                playEmote(emote.AnimationId)
+            end)
+        end)
+        yPos = yPos + 35
+    end
+end
+
+generateR6Buttons(R6Emotes)
+
+-- PART 2 SCRIPT END

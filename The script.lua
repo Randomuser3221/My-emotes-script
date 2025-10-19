@@ -118,9 +118,6 @@ end
 R6TabBtn.MouseButton1Click:Connect(function() switchTab("R6") end)
 R15TabBtn.MouseButton1Click:Connect(function() switchTab("R15") end)
 OtherTabBtn.MouseButton1Click:Connect(function() switchTab("Other") end)
--- Part 1: UI Setup (Ensure this is already in place)
-
--- Part 2: Fixes and Enhancements
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local UI = script.Parent:WaitForChild("MainFrame")

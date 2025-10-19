@@ -165,88 +165,7 @@ R15Frame.Parent = MainFrame
 local OtherFrame = Instance.new("Frame")
 OtherFrame.Size = UDim2.new(1,0,1,-70)
 OtherFrame.Position = UDim2.new(0,0,0,70)
-OtherFrame.BackgroundTransparency = 1
-OtherFrame.Visible = false
-OtherFrame.Parent = MainFrame
 
-R6TabBtn.MouseButton1Click:Connect(function()
-    R6Frame.Visible = true
-    R15Frame.Visible = false
-    OtherFrame.Visible = false
-end)
-
-R15TabBtn.MouseButton1Click:Connect(function()
-    R6Frame.Visible = false
-    R15Frame.Visible = true
-    OtherFrame.Visible = false
-end)
-
-OtherTabBtn.MouseButton1Click:Connect(function()
-    R6Frame.Visible = false
-    R15Frame.Visible = false
-    OtherFrame.Visible = true
-end)
-
--- Minimize Button
-local Minimized = false
-MinButton.MouseButton1Click:Connect(function()
-    if not Minimized then
-        MainFrame.Size = UDim2.new(0,150,0,30)
-        EmoteFrame.Visible = false
-        R6Frame.Visible = false
-        R15Frame.Visible = false
-        OtherFrame.Visible = false
-        Minimized = true
-    else
-        MainFrame.Size = UDim2.new(0,600,0,400)
-        EmoteFrame.Visible = true
-        R6Frame.Visible = true
-        Minimized = false
-    end
-end)
-
--- Close Button
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
-
--- Function to play R6 Emotes correctly
-local function playEmote(animationId)
-    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
-    if hum then
-        local anim = Instance.new("Animation")
-        anim.AnimationId = "rbxassetid://"..animationId
-        local track = hum:LoadAnimation(anim)
-        track:Play()
-    end
-end
-
--- Generate Buttons for R6 Frame
-local function generateR6Buttons(emotes)
-    local yPos = 0
-    for _, emote in ipairs(emotes) do
-        local Btn = Instance.new("TextButton")
-        Btn.Text = emote.Name
-        Btn.Font = Enum.Font.FredokaOne
-        Btn.TextSize = 16
-        Btn.Size = UDim2.new(0,150,0,30)
-        Btn.Position = UDim2.new(0,10,0,yPos)
-        Btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-        Btn.TextColor3 = Color3.fromRGB(255,255,255)
-        Btn.Parent = R6Frame
-
-        Btn.MouseButton1Click:Connect(function()
-            pcall(function()
-                playEmote(emote.AnimationId)
-            end)
-        end)
-        yPos = yPos + 35
-    end
-end
-
-generateR6Buttons(R6Emotes)
-
--- PART 2 SCRIPT END
 
 
 -- PART 3A START
@@ -766,3 +685,299 @@ end
 
 statusBox.Text = "UI ready. Use tabs to switch. Use slider/text to set speed."
 -- PART 3A END
+
+
+-- PART 3B START
+-- My Emotes Hub — UI fixes & full core functionality (soft-wave rainbow outline, drag, tabs,
+-- universal emote playback (R6/R15 auto-detect), slider+textbox speed sync, custom emote loader)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- safe create helper
+local function New(class, props)
+    local o = Instance.new(class)
+    if props then
+        for k,v in pairs(props) do
+            pcall(function() o[k] = v end)
+        end
+    end
+    return o
+end
+
+-- remove old if present
+pcall(function()
+    local old = PlayerGui:FindFirstChild("MyEmotesHubGui")
+    if old then old:Destroy() end
+end)
+
+-- SCREEN GUI
+local screenGui = New("ScreenGui", {Name="MyEmotesHubGui", ResetOnSpawn=false, Parent=PlayerGui})
+
+-- MAIN FRAME
+local main = New("Frame", {
+    Name = "Main",
+    Size = UDim2.new(0,540,0,460),
+    Position = UDim2.new(0.5,-270,0.45,-230),
+    AnchorPoint = Vector2.new(0.5,0.5),
+    BackgroundColor3 = Color3.fromRGB(24,24,24),
+    BorderSizePixel = 0,
+    Parent = screenGui
+})
+New("UICorner", {Parent = main, CornerRadius = UDim.new(0,14)})
+
+-- OUTLINE HOLDER (for soft-wave gradient)
+local outlineHolder = New("Frame", {Parent = main, Size = UDim2.new(1,8,1,8), Position = UDim2.new(0,-4,0,-4), BackgroundTransparency = 1, ZIndex = 0})
+local outlineFrame = New("Frame", {Parent = outlineHolder, Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1})
+local stroke = New("Frame", {Parent = outlineHolder, Size = UDim2.new(1,6,1,6), Position = UDim2.new(0,-3,0,-3), BackgroundTransparency = 1})
+New("UICorner", {Parent = stroke, CornerRadius = UDim.new(0,16)})
+
+-- UIGradient used for soft-wave; we'll animate Rotation to create moving wave effect
+local strokeGrad = New("UIGradient", {Parent = stroke})
+strokeGrad.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255,0,0)),
+    ColorSequenceKeypoint.new(0.16, Color3.fromRGB(255,127,0)),
+    ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255,255,0)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,255,0)),
+    ColorSequenceKeypoint.new(0.66, Color3.fromRGB(0,0,255)),
+    ColorSequenceKeypoint.new(0.83, Color3.fromRGB(75,0,130)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(148,0,211))
+}
+strokeGrad.Rotation = 0
+strokeGrad.Offset = Vector2.new(0,0)
+
+-- CONTENT (inner readable area)
+local content = New("Frame", {Parent = main, Size = UDim2.new(1,-8,1,-8), Position = UDim2.new(0,4,0,4), BackgroundColor3 = Color3.fromRGB(18,18,18)})
+New("UICorner", {Parent = content, CornerRadius = UDim.new(0,12)})
+
+-- TOP BAR
+local topBar = New("Frame", {Parent = content, Size = UDim2.new(1,0,0,40), BackgroundColor3 = Color3.fromRGB(28,28,28)})
+New("UICorner", {Parent = topBar, CornerRadius = UDim.new(0,10)})
+local title = New("TextLabel", {Parent = topBar, Text = "My Emotes", Font = Enum.Font.FredokaOne, TextSize = 20, TextColor3 = Color3.fromRGB(245,245,245), BackgroundTransparency = 1, Position = UDim2.new(0,12,0,0), Size = UDim2.new(0.6,0,1,0), TextXAlignment = Enum.TextXAlignment.Left})
+
+local btnMin = New("TextButton", {Parent = topBar, Text = "−", Font = Enum.Font.FredokaOne, TextSize = 20, Size = UDim2.new(0,34,0,28), Position = UDim2.new(0.74,0,0.08,0), BackgroundColor3 = Color3.fromRGB(42,42,42), TextColor3 = Color3.fromRGB(240,240,240)})
+New("UICorner", {Parent = btnMin, CornerRadius = UDim.new(0,8)})
+local btnClose = New("TextButton", {Parent = topBar, Text = "✕", Font = Enum.Font.FredokaOne, TextSize = 18, Size = UDim2.new(0,34,0,28), Position = UDim2.new(0.85,0,0.08,0), BackgroundColor3 = Color3.fromRGB(42,42,42), TextColor3 = Color3.fromRGB(240,240,240)})
+New("UICorner", {Parent = btnClose, CornerRadius = UDim.new(0,8)})
+
+-- TABS ROW
+local tabsRow = New("Frame", {Parent = content, Size = UDim2.new(1,0,0,40), Position = UDim2.new(0,0,0,40), BackgroundTransparency = 1})
+local function MakeTab(text, x)
+    local b = New("TextButton", {Parent = tabsRow, Text = text, Font = Enum.Font.FredokaOne, TextSize = 16, Size = UDim2.new(0,140,1,0), Position = UDim2.new(0,x,0,0), BackgroundColor3 = Color3.fromRGB(34,34,34), TextColor3 = Color3.fromRGB(240,240,240)})
+    New("UICorner", {Parent = b, CornerRadius = UDim.new(0,8)})
+    return b
+end
+local tabR6 = MakeTab("R6", 12)
+local tabR15 = MakeTab("R15", 162)
+local tabOther = MakeTab("Other", 312)
+
+-- Scroll areas
+local function MakeScroll(parent)
+    local sc = New("ScrollingFrame", {Parent = parent, Size = UDim2.new(1,-24,1,-150), Position = UDim2.new(0,12,0,96), BackgroundTransparency = 1, ScrollBarThickness = 8})
+    local layout = New("UIListLayout", {Parent = sc})
+    layout.Padding = UDim.new(0,8)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    return sc
+end
+local scrollR6 = MakeScroll(content)
+local scrollR15 = MakeScroll(content)
+local scrollOther = MakeScroll(content)
+scrollR15.Visible = false
+scrollOther.Visible = false
+
+-- STATUS BOX
+local statusBox = New("TextLabel", {Parent = content, Size = UDim2.new(1,-24,0,36), Position = UDim2.new(0,12,1,-46), BackgroundColor3 = Color3.fromRGB(34,34,34), TextColor3 = Color3.fromRGB(230,230,230), Font = Enum.Font.FredokaOne, TextSize = 15, Text = "Ready"})
+New("UICorner", {Parent = statusBox, CornerRadius = UDim.new(0,8)})
+
+-- MINIMIZE/CLOSE/RESTORE logic
+local isMin = false
+local prevProps = {Size = main.Size, Position = main.Position}
+btnMin.MouseButton1Click:Connect(function()
+    if not isMin then
+        prevProps.Size = main.Size
+        prevProps.Position = main.Position
+        main.Size = UDim2.new(0,260,0,40)
+        main.Position = UDim2.new(0.5, -130, 0.9, -20)
+        content.Visible = false
+        isMin = true
+        btnMin.Text = "+"
+    else
+        main.Size = prevProps.Size
+        main.Position = prevProps.Position
+        content.Visible = true
+        isMin = false
+        btnMin.Text = "−"
+    end
+end)
+
+btnClose.MouseButton1Click:Connect(function()
+    screenGui.Enabled = false
+    statusBox.Text = "UI closed. Press Q to restore."
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.Q then
+        screenGui.Enabled = true
+        -- tiny notification
+        local note = New("TextLabel", {Parent = screenGui, Size = UDim2.new(0,220,0,36), Position = UDim2.new(0.5,-110,0.9,0), BackgroundColor3 = Color3.fromRGB(30,30,30), TextColor3 = Color3.fromRGB(255,255,255), Font = Enum.Font.FredokaOne, TextSize = 16, Text = "🟢 UI Restored (Q)", AnchorPoint = Vector2.new(0.5,0.5)})
+        New("UICorner", {Parent = note, CornerRadius = UDim.new(0,8)})
+        TweenService:Create(note, TweenInfo.new(2, Enum.EasingStyle.Quad), {TextTransparency = 1, BackgroundTransparency = 1}):Play()
+        delay(2, function() pcall(function() note:Destroy() end) end)
+    end
+end)
+
+-- SOFT-WAVE ANIMATION: slowly rotate gradient to create moving wave across outline
+RunService.RenderStepped:Connect(function(dt)
+    strokeGrad.Rotation = (strokeGrad.Rotation + dt * 14) % 360
+    -- subtle offset wave
+    local t = tick() * 0.22
+    strokeGrad.Offset = Vector2.new( math.sin(t)*0.2, math.cos(t)*0.2 )
+end)
+
+-- DRAGGING (topBar)
+do
+    local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
+    topBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = main.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    topBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            local delta = input.Position - dragStart
+            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- UNIVERSAL EMOTE PLAYBACK
+local function playAnimationById(animId, speed)
+    speed = tonumber(speed) or 1
+    if not animId then statusBox.Text = "Invalid animation id"; return end
+    local char = LocalPlayer.Character
+    if not char then statusBox.Text = "No character"; return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then statusBox.Text = "No humanoid"; return end
+    local id = tostring(animId):match("(%d+)")
+    if not id then statusBox.Text = "Invalid id"; return end
+    local anim = New("Animation", {})
+    anim.AnimationId = "rbxassetid://"..id
+    local ok, track = pcall(function() return hum:LoadAnimation(anim) end)
+    if not ok or not track then
+        statusBox.Text = "Failed to load "..tostring(id)
+        return
+    end
+    track:Play()
+    pcall(function() track:AdjustSpeed(speed) end)
+    statusBox.Text = "Playing "..tostring(animId)
+end
+
+-- SLIDER + TEXTBOX SYNC (in Other tab)
+local controls = New("Frame", {Parent = scrollOther, Size = UDim2.new(1,-24,0,80), Position = UDim2.new(0,12,0,6), BackgroundTransparency = 1})
+local lbl = New("TextLabel", {Parent = controls, Text = "Animation Speed", Font = Enum.Font.FredokaOne, TextSize = 14, TextColor3 = Color3.fromRGB(230,230,230), BackgroundTransparency = 1, Size = UDim2.new(0,140,1,0)})
+local speedBox = New("TextBox", {Parent = controls, Text = "1", ClearTextOnFocus = false, Font = Enum.Font.FredokaOne, TextSize = 14, BackgroundColor3 = Color3.fromRGB(44,44,44), TextColor3 = Color3.fromRGB(240,240,240), Size = UDim2.new(0,84,0,28), Position = UDim2.new(0,150,0,12)})
+New("UICorner", {Parent = speedBox, CornerRadius = UDim.new(0,6)})
+
+local trackBg = New("Frame", {Parent = controls, Size = UDim2.new(0,260,0,12), Position = UDim2.new(0,250,0,32), BackgroundColor3 = Color3.fromRGB(60,60,60)})
+New("UICorner", {Parent = trackBg, CornerRadius = UDim.new(0,6)})
+local handle = New("Frame", {Parent = trackBg, Size = UDim2.new(0,12,1,0), Position = UDim2.new(0,0,0,0), BackgroundColor3 = Color3.fromRGB(200,200,200)})
+New("UICorner", {Parent = handle, CornerRadius = UDim.new(0,6)})
+
+local function setSpeed(v)
+    v = math.clamp(tonumber(v) or 1, 0.1, 10)
+    speedBox.Text = tostring(math.floor(v*100)/100)
+    local width = trackBg.AbsoluteSize.X - handle.AbsoluteSize.X
+    handle.Position = UDim2.new(0, math.floor((v - 0.1) / (10 - 0.1) * width), 0, 0)
+end
+
+-- wait for absolute size then init
+spawn(function() wait(0.1) setSpeed(tonumber(speedBox.Text) or 1) end)
+
+-- handle dragging
+do
+    local dragging = false
+    local function update(pos)
+        local abs = trackBg.AbsolutePosition.X
+        local width = trackBg.AbsoluteSize.X - handle.AbsoluteSize.X
+        local x = math.clamp(pos.X - abs, 0, width)
+        local val = 0.1 + (x / width) * (10 - 0.1)
+        setSpeed(val)
+    end
+    handle.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then dragging=true i.Changed:Connect(function() if i.UserInputState==Enum.UserInputState.End then dragging=false end end) end end)
+    UserInputService.InputChanged:Connect(function(i) if dragging and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then update(i.Position) end end)
+    trackBg.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then update(i.Position) end end)
+    speedBox.FocusLost:Connect(function() setSpeed(tonumber(speedBox.Text) or 1) end)
+end
+
+-- EMOTE ROW CREATOR (adds Play button and sets up click)
+local function createEmoteEntry(parent, name, animId)
+    local row = New("Frame", {Parent = parent, Size = UDim2.new(1,-12,0,40), BackgroundTransparency = 1})
+    local btn = New("TextButton", {Parent = row, Size = UDim2.new(1, -80, 1, 0), Position = UDim2.new(0,0,0,0), Text = name, Font = Enum.Font.FredokaOne, TextSize = 15, BackgroundColor3 = Color3.fromRGB(40,40,40), TextColor3 = Color3.fromRGB(240,240,240), AutoButtonColor = true})
+    New("UICorner", {Parent = btn, CornerRadius = UDim.new(0,8)})
+    local playBtn = New("TextButton", {Parent = row, Size = UDim2.new(0,72,1,0), Position = UDim2.new(1,-72,0,0), Text = "Play", Font = Enum.Font.FredokaOne, TextSize = 14, BackgroundColor3 = Color3.fromRGB(72,148,72), TextColor3 = Color3.fromRGB(255,255,255)})
+    New("UICorner", {Parent = playBtn, CornerRadius = UDim.new(0,8)})
+    local function doPlay()
+        local speed = tonumber(speedBox.Text) or 1
+        spawn(function() pcall(function() playAnimationById(animId, speed) end) end)
+    end
+    playBtn.MouseButton1Click:Connect(doPlay)
+    btn.MouseButton1Click:Connect(doPlay)
+    return row
+end
+
+-- SAMPLE EMOTES (small sets; later parts will add full lists)
+local sampleR6 = {
+    {"/e dance", "507776043"},
+    {"/e wave", "507770239"},
+    {"/e cheer", "507773423"},
+    {"/e laugh", "507773736"}
+}
+local sampleR15 = {
+    {"R15 Dance 1", "507777826"},
+    {"R15 Wave", "507771019"}
+}
+for _,e in ipairs(sampleR6) do createEmoteEntry(scrollR6, e[1], e[2]) end
+for _,e in ipairs(sampleR15) do createEmoteEntry(scrollR15, e[1], e[2]) end
+createEmoteEntry(scrollOther, "Monster Mash (placeholder)", "507776789")
+
+-- fix canvas sizes
+local function fixCanvas(sf)
+    local layout = sf:FindFirstChildOfClass("UIListLayout")
+    if layout then
+        sf.CanvasSize = UDim2.new(0,0,0, layout.AbsoluteContentSize.Y + 12)
+    end
+end
+fixCanvas(scrollR6); fixCanvas(scrollR15); fixCanvas(scrollOther)
+
+-- CUSTOM EMOTE LOADER (manual ID)
+local customRow = New("Frame", {Parent = scrollOther, Size = UDim2.new(1,-12,0,46), BackgroundTransparency = 1})
+local customBox = New("TextBox", {Parent = customRow, Size = UDim2.new(0.64,0,0,32), Position = UDim2.new(0,0,0,8), Text = "", PlaceholderText = "Paste animation id or rbxassetid://...", Font = Enum.Font.FredokaOne, ClearTextOnFocus = false, BackgroundColor3 = Color3.fromRGB(44,44,44), TextColor3 = Color3.fromRGB(240,240,240)})
+New("UICorner", {Parent = customBox, CornerRadius = UDim.new(0,6)})
+local customPlay = New("TextButton", {Parent = customRow, Size = UDim2.new(0,100,0,32), Position = UDim2.new(1,-100,0,8), Text = "🔧 Play Custom", Font = Enum.Font.FredokaOne, BackgroundColor3 = Color3.fromRGB(70,130,180), TextColor3 = Color3.fromRGB(255,255,255)})
+New("UICorner", {Parent = customPlay, CornerRadius = UDim.new(0,6)})
+customPlay.MouseButton1Click:Connect(function()
+    local txt = customBox.Text
+    local id = tostring(txt):match("(%d+)")
+    if not id then statusBox.Text = "Invalid custom ID" return end
+    local speed = tonumber(speedBox.Text) or 1
+    playAnimationById(id, speed)
+end)
+
+statusBox.Text = "UI fixed. Soft-wave outline active. Use tabs to browse emotes."
+-- PART 3B END

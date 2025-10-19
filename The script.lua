@@ -963,3 +963,196 @@ end)
 
 statusBox.Text = "UI fixed. Soft-wave outline active. Use tabs to browse emotes."
 -- PART 3B END
+
+-- PART 3C
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+-- Sound Effects
+local ClickSoundId = 6042053626
+local HoverSoundId = 8426701399
+local EmotePlaySoundId = 7112183471
+
+-- Create UI
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+ScreenGui.Name = "MyEmotesUI"
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 400, 0, 500)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+MainFrame.BackgroundTransparency = 1
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+-- Neon Edges & Gradient Outline
+local UICorner = Instance.new("UICorner", MainFrame)
+UICorner.CornerRadius = UDim.new(0, 12)
+
+local Outline = Instance.new("UIStroke", MainFrame)
+Outline.Thickness = 3
+Outline.Color = Color3.fromRGB(255,0,0)
+Outline.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+Outline.LineJoinMode = Enum.LineJoinMode.Round
+Outline.Transparency = 0
+
+-- Continuous rainbow gradient
+local hue = 0
+RunService.RenderStepped:Connect(function()
+    hue = (hue + 1) % 360
+    Outline.Color = Color3.fromHSV(hue/360, 1, 1)
+end)
+
+-- Tabs
+local TabHolder = Instance.new("Frame", MainFrame)
+TabHolder.Size = UDim2.new(1,0,0,40)
+TabHolder.Position = UDim2.new(0,0,0,0)
+TabHolder.BackgroundTransparency = 1
+
+local R6Button = Instance.new("TextButton", TabHolder)
+R6Button.Size = UDim2.new(0.5,0,1,0)
+R6Button.Text = "R6"
+R6Button.Font = Enum.Font.FredokaOne
+R6Button.TextSize = 18
+
+local R15Button = Instance.new("TextButton", TabHolder)
+R15Button.Size = UDim2.new(0.5,0,1,0)
+R15Button.Position = UDim2.new(0.5,0,0,0)
+R15Button.Text = "R15"
+R15Button.Font = Enum.Font.FredokaOne
+R15Button.TextSize = 18
+
+local ContentFrame = Instance.new("Frame", MainFrame)
+ContentFrame.Size = UDim2.new(1,0,1,-40)
+ContentFrame.Position = UDim2.new(0,0,0,40)
+ContentFrame.BackgroundTransparency = 1
+
+-- Emote lists
+local R6Emotes = {"Wave","Dance","Point","Salute"} -- can expand with full list from AquaMatrix + /e commands
+local R15Emotes = {"Clap","Cheer","Dance","Salute"} -- can expand with origin emotes + UGC
+
+local function ClearContent()
+    for _,v in pairs(ContentFrame:GetChildren()) do
+        if v:IsA("TextButton") or v:IsA("Frame") then
+            v:Destroy()
+        end
+    end
+end
+
+local function PopulateEmotes(emotes)
+    ClearContent()
+    local yPos = 10
+    for _,emote in pairs(emotes) do
+        local btn = Instance.new("TextButton", ContentFrame)
+        btn.Size = UDim2.new(1,-20,0,30)
+        btn.Position = UDim2.new(0,10,0,yPos)
+        btn.Text = emote
+        btn.Font = Enum.Font.FredokaOne
+        btn.TextSize = 16
+        btn.TextColor3 = Color3.new(1,1,1)
+        btn.BackgroundColor3 = Color3.fromRGB(30,30,30)
+        btn.BorderSizePixel = 0
+        btn.AutoButtonColor = true
+
+        btn.MouseEnter:Connect(function()
+            local s = Instance.new("Sound", btn)
+            s.SoundId = "rbxassetid://"..HoverSoundId
+            s:Play()
+            game.Debris:AddItem(s,1)
+        end)
+
+        btn.MouseButton1Click:Connect(function()
+            local s = Instance.new("Sound", btn)
+            s.SoundId = "rbxassetid://"..ClickSoundId
+            s:Play()
+            game.Debris:AddItem(s,1)
+
+            -- Play the emote
+            local success, err = pcall(function()
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    LocalPlayer.Character.Humanoid:LoadAnimation(Instance.new("Animation", LocalPlayer.Character){AnimationId="rbxassetid://EMOTE_ANIM_ID"}):Play()
+                end
+            end)
+            if not success then
+                warn("Failed to play emote:", err)
+            end
+
+            -- Emote sound
+            local es = Instance.new("Sound", btn)
+            es.SoundId = "rbxassetid://"..EmotePlaySoundId
+            es:Play()
+            game.Debris:AddItem(es,1)
+        end)
+        yPos = yPos + 40
+    end
+end
+
+R6Button.MouseButton1Click:Connect(function()
+    PopulateEmotes(R6Emotes)
+end)
+R15Button.MouseButton1Click:Connect(function()
+    PopulateEmotes(R15Emotes)
+end)
+
+-- Load R6 by default
+PopulateEmotes(R6Emotes)
+
+-- Minimize/Close UI
+local MinButton = Instance.new("TextButton", MainFrame)
+MinButton.Size = UDim2.new(0,30,0,30)
+MinButton.Position = UDim2.new(1,-35,0,5)
+MinButton.Text = "-"
+MinButton.Font = Enum.Font.FredokaOne
+MinButton.TextSize = 24
+MinButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MiniBar.Visible = true
+end)
+
+local CloseButton = Instance.new("TextButton", MainFrame)
+CloseButton.Size = UDim2.new(0,30,0,30)
+CloseButton.Position = UDim2.new(1,-70,0,5)
+CloseButton.Text = "X"
+CloseButton.Font = Enum.Font.FredokaOne
+CloseButton.TextSize = 24
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Mini bar
+local MiniBar = Instance.new("Frame", ScreenGui)
+MiniBar.Size = UDim2.new(0,100,0,30)
+MiniBar.Position = UDim2.new(0,50,0,50)
+MiniBar.BackgroundColor3 = Color3.fromRGB(30,30,30)
+MiniBar.Visible = false
+MiniBar.Draggable = true
+
+local MiniText = Instance.new("TextLabel", MiniBar)
+MiniText.Size = UDim2.new(1,0,1,0)
+MiniText.Text = "My Emotes"
+MiniText.TextColor3 = Color3.new(1,1,1)
+MiniText.Font = Enum.Font.FredokaOne
+MiniText.TextSize = 16
+
+local RestoreButton = Instance.new("TextButton", MiniBar)
+RestoreButton.Size = UDim2.new(0,30,1,0)
+RestoreButton.Position = UDim2.new(1,-30,0,0)
+RestoreButton.Text = "+"
+RestoreButton.Font = Enum.Font.FredokaOne
+RestoreButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    MiniBar.Visible = false
+end)
+
+-- Q keybind to toggle UI
+UserInputService.InputBegan:Connect(function(input,gp)
+    if not gp and input.KeyCode == Enum.KeyCode.Q then
+        MainFrame.Visible = not MainFrame.Visible
+        MiniBar.Visible = not MainFrame.Visible
+    end
+end)

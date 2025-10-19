@@ -146,25 +146,7 @@ generateEmoteButtons(R6Emotes)
 
 -- PART 1 SCRIPT END
 
--- PART 2 SCRIPT START
 
--- Hide/Show Frames for Tabs
-local R6Frame = Instance.new("Frame")
-R6Frame.Size = UDim2.new(1,0,1,-70)
-R6Frame.Position = UDim2.new(0,0,0,70)
-R6Frame.BackgroundTransparency = 1
-R6Frame.Parent = MainFrame
-
-local R15Frame = Instance.new("Frame")
-R15Frame.Size = UDim2.new(1,0,1,-70)
-R15Frame.Position = UDim2.new(0,0,0,70)
-R15Frame.BackgroundTransparency = 1
-R15Frame.Visible = false
-R15Frame.Parent = MainFrame
-
-local OtherFrame = Instance.new("Frame")
-OtherFrame.Size = UDim2.new(1,0,1,-70)
-OtherFrame.Position = UDim2.new(0,0,0,70)
 
 
 

@@ -1,156 +1,194 @@
--- My Emotes Script (Part 1: UI Setup & Tabs)
-
--- Services
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-
--- Main UI
+-- Core UI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MyEmotesUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game.CoreGui
+ScreenGui.Name = "EmoteUI"
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 450, 0, 500)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -250)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
+MainFrame.Size = UDim2.new(0, 400, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.Parent = ScreenGui
 
--- Rainbow outline
-local Outline = Instance.new("UIStroke")
-Outline.Parent = MainFrame
-Outline.Thickness = 3
-Outline.Color = Color3.fromRGB(255, 0, 0)
-Outline.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+-- Tab Buttons
+local TabButtons = Instance.new("Frame")
+TabButtons.Name = "TabButtons"
+TabButtons.Size = UDim2.new(1, 0, 0, 50)
+TabButtons.Position = UDim2.new(0, 0, 0, 0)
+TabButtons.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+TabButtons.Parent = MainFrame
 
--- Animate rainbow outline
-local colors = {Color3.fromRGB(255,0,0),Color3.fromRGB(255,127,0),Color3.fromRGB(255,255,0),Color3.fromRGB(0,255,0),Color3.fromRGB(0,0,255),Color3.fromRGB(75,0,130),Color3.fromRGB(148,0,211)}
-local colorIndex = 1
-RunService.RenderStepped:Connect(function()
-    Outline.Color = colors[colorIndex]
-    colorIndex = colorIndex + 1
-    if colorIndex > #colors then
-        colorIndex = 1
+local R6TabBtn = Instance.new("TextButton")
+R6TabBtn.Name = "R6TabBtn"
+R6TabBtn.Size = UDim2.new(0, 100, 1, 0)
+R6TabBtn.Position = UDim2.new(0, 0, 0, 0)
+R6TabBtn.Text = "R6"
+R6TabBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+R6TabBtn.Parent = TabButtons
+
+local R15TabBtn = Instance.new("TextButton")
+R15TabBtn.Name = "R15TabBtn"
+R15TabBtn.Size = UDim2.new(0, 100, 1, 0)
+R15TabBtn.Position = UDim2.new(0, 100, 0, 0)
+R15TabBtn.Text = "R15"
+R15TabBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+R15TabBtn.Parent = TabButtons
+
+local OtherTabBtn = Instance.new("TextButton")
+OtherTabBtn.Name = "OtherTabBtn"
+OtherTabBtn.Size = UDim2.new(0, 100, 1, 0)
+OtherTabBtn.Position = UDim2.new(0, 200, 0, 0)
+OtherTabBtn.Text = "Other"
+OtherTabBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+OtherTabBtn.Parent = TabButtons
+
+-- Content Frame
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Size = UDim2.new(1, 0, 1, -50)
+ContentFrame.Position = UDim2.new(0, 0, 0, 50)
+ContentFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ContentFrame.Parent = MainFrame
+
+-- Dragging Functionality
+local dragging = false
+local dragInput, mousePos, framePos
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        mousePos = input.Position
+        framePos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
 end)
 
--- Title
-local Title = Instance.new("TextLabel")
-Title.Parent = MainFrame
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Position = UDim2.new(0,0,0,0)
-Title.BackgroundTransparency = 1
-Title.Text = "My Emotes"
-Title.Font = Enum.Font.FredokaOne
-Title.TextSize = 24
-Title.TextColor3 = Color3.fromRGB(255,255,255)
-Title.TextStrokeTransparency = 0
-Title.TextScaled = true
-
--- Tabs
-local TabFrame = Instance.new("Frame")
-TabFrame.Parent = MainFrame
-TabFrame.Size = UDim2.new(1,0,0,40)
-TabFrame.Position = UDim2.new(0,0,0,40)
-TabFrame.BackgroundTransparency = 1
-
-local function createTabButton(name, pos)
-    local button = Instance.new("TextButton")
-    button.Parent = TabFrame
-    button.Size = UDim2.new(0, 130, 1, 0)
-    button.Position = UDim2.new(0, pos, 0, 0)
-    button.Text = name
-    button.Font = Enum.Font.FredokaOne
-    button.TextSize = 18
-    button.TextColor3 = Color3.fromRGB(255,255,255)
-    button.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    button.BorderSizePixel = 0
-    return button
-end
-
-local R6TabBtn = createTabButton("R6", 10)
-local R15TabBtn = createTabButton("R15", 150)
-local OtherTabBtn = createTabButton("Other", 290)
-
--- Container for emotes
-local ContentFrame = Instance.new("ScrollingFrame")
-ContentFrame.Parent = MainFrame
-ContentFrame.Size = UDim2.new(1, -20, 1, -80)
-ContentFrame.Position = UDim2.new(0, 10, 0, 80)
-ContentFrame.CanvasSize = UDim2.new(0,0,2,0)
-ContentFrame.ScrollBarThickness = 10
-ContentFrame.BackgroundTransparency = 1
-
--- UIListLayout
-local ListLayout = Instance.new("UIListLayout")
-ListLayout.Parent = ContentFrame
-ListLayout.Padding = UDim.new(0,5)
-ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
--- Function to switch tabs
-local function switchTab(tabName)
-    for _,v in pairs(ContentFrame:GetChildren()) do
-        if v:IsA("TextButton") then
-            v.Visible = false
-        end
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+        local delta = input.Position - mousePos
+        MainFrame.Position = framePos + UDim2.new(0, delta.X, 0, delta.Y)
     end
-    for _,v in pairs(ContentFrame:GetChildren()) do
-        if v.Name:match(tabName) then
-            v.Visible = true
-        end
-    end
-end
+end)
 
-R6TabBtn.MouseButton1Click:Connect(function() switchTab("R6") end)
-R15TabBtn.MouseButton1Click:Connect(function() switchTab("R15") end)
-OtherTabBtn.MouseButton1Click:Connect(function() switchTab("Other") end)
-local TweenService = game:GetService("TweenService")
-local UIS = game:GetService("UserInputService")
-local UI = script.Parent:WaitForChild("MainFrame")
-local Outline = UI:WaitForChild("Outline")
-local minimizeBtn = UI:WaitForChild("MinimizeButton")
-local closeBtn = UI:WaitForChild("CloseButton")
-local miniBar = script:WaitForChild("MiniBar")
+-- Minimize and Close Buttons
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Name = "MinimizeBtn"
+minimizeBtn.Size = UDim2.new(0, 50, 0, 50)
+minimizeBtn.Position = UDim2.new(1, -50, 0, 0)
+minimizeBtn.Text = "-"
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+minimizeBtn.Parent = MainFrame
 
--- Smooth rainbow outline
-local function createRainbowTween()
-    local tweenInfo = TweenInfo.new(5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true)
-    local goal = {BackgroundColor3 = Color3.fromHSV(tick() % 1, 1, 1)}
-    local tween = TweenService:Create(Outline, tweenInfo, goal)
-    tween:Play()
-end
+local closeBtn = Instance.new("TextButton")
+closeBtn.Name = "CloseBtn"
+closeBtn.Size = UDim2.new(0, 50, 0, 50)
+closeBtn.Position = UDim2.new(1, -100, 0, 0)
+closeBtn.Text = "X"
+closeBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+closeBtn.Parent = MainFrame
 
-createRainbowTween()
+local miniBar = Instance.new("Frame")
+miniBar.Name = "MiniBar"
+miniBar.Size = UDim2.new(0, 100, 0, 50)
+miniBar.Position = UDim2.new(0.5, -50, 0, 0)
+miniBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+miniBar.Visible = false
+miniBar.Parent = ScreenGui
 
--- Minimize and Close Button Functionality
 minimizeBtn.MouseButton1Click:Connect(function()
-    UI.Visible = false
+    MainFrame.Visible = false
     miniBar.Visible = true
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
-    UI.Visible = false
+    MainFrame.Visible = false
     miniBar.Visible = false
 end)
 
-miniBar.OpenBtn.MouseButton1Click:Connect(function()
-    UI.Visible = true
+miniBar.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
     miniBar.Visible = false
 end)
 
--- Q Keybind to Toggle UI Visibility
+-- Q Keybind to Toggle UI
+local UIS = game:GetService("UserInputService")
+
 UIS.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.Q then
-        UI.Visible = not UI.Visible
+        MainFrame.Visible = not MainFrame.Visible
         miniBar.Visible = not miniBar.Visible
     end
 end)
+
+local R6Emotes = {
+    {Name = "Dance", AnimationId = 507767714}, 
+    {Name = "Wave", AnimationId = 507766666}, 
+    {Name = "Monster Mash", AnimationId = 123456789} -- AquaMatrix Gear
+    -- Continue loading all AquaMatrix R6 emotes
+}
+
+local R15Emotes = {
+    {Name = "Silly Dance", AnimationId = 654321987, UGC=false}, 
+    {Name = "Jumping Jack", AnimationId = 987654321, UGC=false}
+    -- Continue loading all FE Silly Emotes R15 emotes
+}
+
+local function generateEmoteButtons(emoteTable, parentFrame)
+    local yPos = 0
+    for _, emote in ipairs(emoteTable) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, -10, 0, 40)
+        btn.Position = UDim2.new(0, 5, 0, yPos)
+        btn.Text = emote.Name
+        btn.Font = Enum.Font.FredokaOne
+        btn.TextSize = 18
+        btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+        btn.Parent = parentFrame
+
+        btn.MouseButton1Click:Connect(function()
+            -- Play the emote
+            local plr = game.Players.LocalPlayer
+            local character = plr.Character or plr.CharacterAdded:Wait()
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                local anim = Instance.new("Animation")
+                anim.AnimationId = "rbxassetid://"..emote.AnimationId
+                local track = humanoid:LoadAnimation(anim)
+                track:Play()
+            end
+        end)
+
+        yPos = yPos + 45
+    end
+end
+
+local R6Frame = Instance.new("ScrollingFrame")
+R6Frame.Size = UDim2.new(1,0,1, -50)
+R6Frame.Position = UDim2.new(0,0,0,50)
+R6Frame.CanvasSize = UDim2.new(0,0,0,#R6Emotes*45)
+R6Frame.Visible = true
+R6Frame.Parent = ContentFrame
+
+local R15Frame = Instance.new("ScrollingFrame")
+R15Frame.Size = UDim2.new(1,0,1, -50)
+R15Frame.Position = UDim2.new(0,0,0,50)
+R15Frame.CanvasSize = UDim2.new(0,0,0,#R15Emotes*45)
+R15Frame.Visible = false
+R15Frame.Parent = ContentFrame
+
+R6TabBtn.MouseButton1Click:Connect(function()
+    R6Frame.Visible = true
+    R15Frame.Visible = false
+end)
+
+R15TabBtn.MouseButton1Click:Connect(function()
+    R6Frame.Visible = false
+    R15Frame.Visible = true
+end)
+
+generateEmoteButtons(R6Emotes, R6Frame)
+generateEmoteButtons(R15Emotes, R15Frame)

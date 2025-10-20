@@ -1,8 +1,9 @@
--- Core UI Setup
+-- Create the main ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "EmoteUI"
 ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
+-- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 400, 0, 300)
@@ -125,16 +126,14 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 local R6Emotes = {
-    {Name = "Dance", AnimationId = 507767714}, 
-    {Name = "Wave", AnimationId = 507766666}, 
+    {Name = "Dance", AnimationId = 507767714},
+    {Name = "Wave", AnimationId = 507766666},
     {Name = "Monster Mash", AnimationId = 123456789} -- AquaMatrix Gear
-    -- Continue loading all AquaMatrix R6 emotes
 }
 
 local R15Emotes = {
-    {Name = "Silly Dance", AnimationId = 654321987, UGC=false}, 
+    {Name = "Silly Dance", AnimationId = 654321987, UGC=false},
     {Name = "Jumping Jack", AnimationId = 987654321, UGC=false}
-    -- Continue loading all FE Silly Emotes R15 emotes
 }
 
 local function generateEmoteButtons(emoteTable, parentFrame)
@@ -150,7 +149,6 @@ local function generateEmoteButtons(emoteTable, parentFrame)
         btn.Parent = parentFrame
 
         btn.MouseButton1Click:Connect(function()
-            -- Play the emote
             local plr = game.Players.LocalPlayer
             local character = plr.Character or plr.CharacterAdded:Wait()
             local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -192,3 +190,21 @@ end)
 
 generateEmoteButtons(R6Emotes, R6Frame)
 generateEmoteButtons(R15Emotes, R15Frame)
+
+-- Apply rounded corners and gradients to buttons
+local function styleButton(button)
+    button.BackgroundTransparency = 0.5
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 0, 255))
+    gradient.Parent = button
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = button
+end
+
+-- Apply styling to all buttons
+styleButton(R6TabBtn)
+styleButton(R15TabBtn)
+styleButton(OtherTabBtn)
+styleButton(minimizeBtn)
+styleButton(closeBtn)
